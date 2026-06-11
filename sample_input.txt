@@ -1,0 +1,6 @@
+This is a sample input file for the Lossless Huffman Compressor project.
+It contains some repetitive text to demonstrate the efficiency of the Run-Length Encoding (RLE) and Huffman Coding algorithms.
+Repetitive text: AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDDEEEEEEEEEE
+More text to compress!
+More text to compress!
+More text to compress!

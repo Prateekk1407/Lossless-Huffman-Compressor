@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Huffman System</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0f172a; --card: rgba(30,41,59,0.7); --border: rgba(255,255,255,0.1); --primary: #8b5cf6; --accent: #06b6d4; --success: #10b981; --warn: #f43f5e; }
+        * { box-sizing: border-box; }
+        body { background:var(--bg); color:#f1f5f9; font-family:'Outfit',sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:40px; margin:0; }
+        h1 { font-size:3rem; background:linear-gradient(to right,#c084fc,#67e8f9); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; color:transparent; margin-bottom:10px; text-align:center; }
+        
+        .container { display:flex; gap:30px; width:100%; max-width:900px; margin-top:20px; flex-wrap:wrap; }
+        .card { flex:1; min-width:300px; background:var(--card); border:1px solid var(--border); border-radius:24px; padding:30px; text-align:center; display:flex; flex-direction:column; }
+        
+        .drop-zone { border:2px dashed rgba(255,255,255,0.2); border-radius:16px; padding:30px; cursor:pointer; transition:0.3s; margin-top:15px; position:relative; flex-grow: 1; display:flex; flex-direction:column; justify-content:center; align-items:center;}
+        .drop-zone:hover { border-color:var(--accent); background:rgba(6,182,212,0.1); }
+        .icon { font-size:3rem; display:block; margin-bottom:10px; }
+        
+        .format-list { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 15px; opacity: 0.8; }
+        .format-tag { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 8px; font-size: 0.75rem; color: #cbd5e1; font-family: 'Fira Code', monospace; display: flex; align-items: center; gap: 4px; }
+        .format-tag span { opacity: 0.6; }
+
+        .input-group { width:100%; max-width:400px; margin-bottom:10px; text-align:left; }
+        .input-group label { font-size:0.9rem; color:#94a3b8; margin-left:5px; }
+        .pass-input { width:100%; padding:12px 15px; background:#1e293b; border:1px solid var(--border); border-radius:12px; color:white; margin-top:5px; outline:none; font-family:inherit; transition:0.3s; }
+        .pass-input:focus { border-color:var(--accent); box-shadow:0 0 10px rgba(6,182,212,0.2); }
+
+        #dashboard { width:100%; max-width:900px; background:#1e293b; border:1px solid var(--border); border-radius:24px; margin-top:30px; padding:30px; display:none; }
+        .stat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:20px; text-align:center; }
+        .stat-label { font-size:0.8rem; color:#94a3b8; letter-spacing:1px; margin-bottom:5px; }
+        .stat-val { font-size:1.4rem; font-weight:700; }
+        .good { color:var(--success); } .bad { color:var(--warn); }
+        .mode-tag { color:#facc15; border:1px solid rgba(250,204,21,0.3); padding:4px 12px; border-radius:20px; font-size:1rem; display:inline-block;}
+
+        #tree-container { width:100%; height:600px; margin-top:30px; border-top:1px solid var(--border); position:relative; display:none; align-items:center; justify-content:center; overflow: hidden; background: rgba(0,0,0,0.2); border-radius: 0 0 24px 24px;}
+        svg { width:100%; height:100%; }
+        .link { fill: none; stroke: var(--accent); stroke-opacity: 0.4; stroke-width: 2px; }
+        .node circle { transition: 0.3s; }
+        .node--internal circle { fill: var(--bg); stroke: var(--accent); stroke-width: 2px; }
+        .node--leaf circle { fill: var(--primary); stroke: #fff; stroke-width: 2px; }
+        .node text { font-family: 'Outfit', sans-serif; fill: #fff; text-anchor: middle; pointer-events: none; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        
+        #terminal-container { 
+            width:100%; height:300px; margin-top:30px; background: #000; border:1px solid #333; border-radius: 12px;
+            padding: 20px; font-family: 'Fira Code', monospace; overflow-y: auto; display: none; text-align: left;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .term-line { display: block; margin-bottom: 8px; color: #33ff33; font-size: 14px; }
+        .blink { animation: blinker 1s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
+    </style>
+</head>
+<body>
+
+    <h1>Huffman Engine (TEA)</h1>
+    <p style="color:#94a3b8; margin-bottom:30px;">Secure • Hybrid Compression • Universal Support</p>
+
+    <div class="input-group">
+        <label>🔒 Encryption Password (Optional)</label>
+        <input type="password" id="password" class="pass-input" placeholder="Enter password to encrypt/decrypt...">
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Compress</h2>
+            <div class="drop-zone" onclick="document.getElementById('fc').click()">
+                <span class="icon">📦</span>
+                <p><strong>Click to Select Files</strong><br><small style="color:#64748b">or drag & drop here</small></p>
+                <div class="format-list">
+                    <div class="format-tag"><span>💻</span> .c .py .js .json</div>
+                    <div class="format-tag"><span>📄</span> .txt .csv .xml</div>
+                    <div class="format-tag"><span>🖼️</span> .bmp .svg</div>
+                </div>
+                <input type="file" id="fc" multiple style="display:none" 
+                       accept=".txt,.c,.cpp,.h,.js,.py,.java,.html,.css,.json,.xml,.csv,.svg,.bmp,.md">
+            </div>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:10px; opacity:0.7;">
+                *Supports code, data & binary files.
+            </p>
+        </div>
+
+        <div class="card">
+            <h2>Restore</h2>
+            <div class="drop-zone" onclick="document.getElementById('fd').click()">
+                <span class="icon">🔓</span>
+                <p><strong>Click to Restore</strong><br><small style="color:#64748b">Select .huff file</small></p>
+                <div class="format-list">
+                    <div class="format-tag" style="background:rgba(16, 185, 129, 0.1); border-color:rgba(16, 185, 129, 0.2); color:#6ee7b7;">
+                        <span>🔐</span> .huff
+                    </div>
+                </div>
+                <input type="file" id="fd" style="display:none" accept=".huff">
+            </div>
+            <p style="font-size:0.75rem; color:#64748b; margin-top:10px; opacity:0.7;">
+                *Auto-detects encryption & original name.
+            </p>
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div class="stat-grid">
+            <div><div id="lbl-orig" class="stat-label">ORIGINAL</div><div id="sz-orig" class="stat-val">-</div></div>
+            <div><div id="lbl-new" class="stat-label">COMPRESSED</div><div id="sz-new" class="stat-val">-</div></div>
+            <div><div class="stat-label">STATUS</div><div id="savings" class="stat-val">-</div></div>
+            <div><div class="stat-label">ALGORITHM</div><div id="mode" class="stat-val mode-tag">-</div></div>
+        </div>
+        
+        <div id="tree-container"><svg id="tree-svg"></svg></div>
+        <div id="terminal-container"><div id="term-content"></div></div>
+    </div>
+
+    <script>
+        const formatBytes = b => {
+            if(!+b) return "0 B";
+            const i=Math.floor(Math.log(b)/Math.log(1024));
+            return (b/Math.pow(1024,i)).toFixed(2)+" "+['B','KB','MB','GB'][i];
+        };
+
+        const handleUpload = (files, url, isDec) => {
+            const fd = new FormData();
+            fd.append('password', document.getElementById('password').value);
+            if(files.length > 1) for(let f of files) fd.append('file', f);
+            else fd.append('file', files[0]);
+
+            document.body.style.cursor = 'wait';
+            const originalName = files[0].name;
+
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('term-content').innerHTML = '';
+
+            fetch(url, { method:'POST', body:fd })
+            .then(r => {
+                if(!r.ok) return r.text().then(t=>{ throw new Error(t) });
+                const json = r.headers.get("X-Tree-Data");
+                if(json && !isDec) {
+                    try {
+                        const data = JSON.parse(json);
+                        document.getElementById('mode').innerText = data.mode;
+                        setTimeout(() => drawTree(data.root), 100);
+                    } catch(e) { console.log("Tree Parse Error:", e); }
+                }
+                return Promise.all([r.blob(), r.headers.get('Content-Disposition')]);
+            })
+            .then(([blob, disp]) => {
+                document.body.style.cursor = 'default';
+                let inputSz = 0; for(let f of files) inputSz += f.size;
+                
+                document.getElementById('dashboard').style.display = 'block';
+                document.getElementById('sz-orig').innerText = formatBytes(inputSz);
+                document.getElementById('sz-new').innerText = formatBytes(blob.size);
+
+                const el = document.getElementById('savings');
+                const lblOrig = document.getElementById('lbl-orig');
+                const lblNew = document.getElementById('lbl-new');
+                const treeCont = document.getElementById('tree-container');
+                const termCont = document.getElementById('terminal-container');
+
+                if(!isDec) {
+                    lblOrig.innerText = "ORIGINAL";
+                    lblNew.innerText = "COMPRESSED";
+                    let p = ((inputSz - blob.size)/inputSz*100).toFixed(1);
+                    el.innerText = (inputSz - blob.size >= 0) ? `↓ ${p}%` : `↑ ${Math.abs(p)}%`;
+                    el.className = (inputSz - blob.size >= 0) ? "stat-val good" : "stat-val bad";
+                    treeCont.style.display = 'flex';
+                    termCont.style.display = 'none';
+                } else {
+                    lblOrig.innerText = "COMPRESSED INPUT";
+                    lblNew.innerText = "RESTORED OUTPUT";
+                    el.innerText = "RESTORED";
+                    el.className = "stat-val good";
+                    document.getElementById('mode').innerText = "Decompression";
+                    treeCont.style.display = 'none';
+                    termCont.style.display = 'block';
+                    renderTerminal(blob, originalName);
+                }
+
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                let name = null;
+                if(disp && disp.indexOf('filename=') !== -1) {
+                    let matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disp);
+                    if(matches != null && matches[1]) name = matches[1].replace(/['"]/g, '');
+                }
+                if (!name) name = isDec ? "restored_" + originalName.replace(".huff", "").replace("compressed_", "") : "compressed_" + originalName + ".huff";
+                a.download = name; document.body.appendChild(a); a.click(); a.remove();
+            })
+            .catch(e => {
+                document.body.style.cursor = 'default';
+                alert("Operation Failed: " + e.message);
+            });
+        };
+
+        const renderTerminal = (blob, filename) => {
+            const term = document.getElementById('term-content');
+            // Clean logs without the raw data dump
+            const logs = [
+                `> INITIALIZING DECRYPTION PROTOCOL...`, 
+                `> READING HEADER: ${filename}`, 
+                `> VERIFYING INTEGRITY... OK`, 
+                `> RECONSTRUCTING HUFFMAN TREE... DONE`, 
+                `> DECOMPRESSING STREAM... 100%`, 
+                `> OUTPUT GENERATED SUCCESSFULLY.`
+            ];
+            
+            let delay = 0;
+            logs.forEach(line => {
+                setTimeout(() => { 
+                    const div = document.createElement('div'); 
+                    div.className = 'term-line'; 
+                    div.innerText = line; 
+                    term.appendChild(div); 
+                }, delay);
+                delay += 150;
+            });
+
+            // Just add the blinking cursor at the end
+            setTimeout(() => {
+                const blink = document.createElement('div');
+                blink.className = 'term-line blink';
+                blink.innerText = "> _";
+                term.appendChild(blink);
+            }, delay + 200);
+        };
+
+        const drawTree = (root) => {
+            const svg = d3.select("#tree-svg"); svg.selectAll("*").remove(); 
+            if(!root) return;
+            const container = document.getElementById('tree-container');
+            let w = container.getBoundingClientRect().width; if (w < 100) w = 900; 
+            const h = 600; 
+            const g = svg.append("g").attr("transform", "translate(0,60)");
+            const tree = d3.tree().size([w, h - 120]); const r = d3.hierarchy(root); tree(r);
+            g.selectAll(".link").data(r.links()).enter().append("path").attr("class", "link").attr("d", d3.linkVertical().x(d=>d.x).y(d=>d.y));
+            const nodes = g.selectAll(".node").data(r.descendants()).enter().append("g").attr("class", d => "node " + (d.children ? "node--internal" : "node--leaf")).attr("transform", d=>`translate(${d.x},${d.y})`);
+            nodes.append("circle").attr("r", d => d.children ? 8 : 14);
+            nodes.append("text").attr("dy", d => d.children ? -15 : 30).text(d => d.data.name);
+        };
+        document.getElementById('fc').onchange = e => handleUpload(e.target.files, '/compress', false);
+        document.getElementById('fd').onchange = e => handleUpload(e.target.files, '/decompress', true);
+    </script>
+</body>
+</html>

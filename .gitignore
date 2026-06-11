@@ -1,0 +1,9 @@
+*.exe
+*.o
+__pycache__/
+uploads/
+*.tar
+*.zip
+*.huff
+*.json
+!sample_output.huff
